@@ -19,7 +19,7 @@
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             background: white;
             border-radius: 16px;
@@ -46,11 +46,96 @@
         .sync-indicator.connected {
             background: rgba(16, 172, 132, 0.3);
         }
+
+        .tabs-container {
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+            padding: 15px 30px 0 30px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab:hover {
+            background: #f0f0f0;
+        }
+
+        .tab.active {
+            background: white;
+            border-color: #667eea;
+            border-bottom: 2px solid white;
+            margin-bottom: -2px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .tab-remove {
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .tab:hover .tab-remove {
+            display: inline-block;
+        }
+
+        .tab-add {
+            padding: 12px 20px;
+            background: #10ac84;
+            color: white;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .tab-add:hover {
+            background: #0e9770;
+        }
         
         .content {
             padding: 30px;
         }
         
+        .day-title-section {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #667eea;
+        }
+
+        .day-title-section input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
         .start-time-section {
             background: #f8f9ff;
             padding: 20px;
@@ -107,6 +192,7 @@
             font-weight: bold;
             margin-right: 15px;
             font-size: 1.2em;
+            flex-shrink: 0;
         }
         
         .destination-details {
@@ -132,6 +218,29 @@
             font-size: 1.1em;
             color: #333;
             font-weight: bold;
+        }
+
+        .memo-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .memo-section textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95em;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 60px;
+            transition: border-color 0.3s;
+        }
+
+        .memo-section textarea:focus {
+            outline: none;
+            border-color: #667eea;
         }
         
         input[type="number"], input[type="text"], input[type="time"] {
@@ -222,6 +331,14 @@
             font-size: 0.9em;
             color: #2c3e50;
         }
+
+        .day-content {
+            display: none;
+        }
+
+        .day-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -232,27 +349,25 @@
             <p>🔥 Firebase 실시간 동기화 | 변경사항이 즉시 모든 사용자에게 반영됩니다</p>
             <div class="sync-indicator" id="syncIndicator">🔄 연결 중...</div>
         </div>
+
+        <div class="tabs-container" id="tabsContainer">
+            <!-- 탭들이 여기에 동적으로 추가됩니다 -->
+        </div>
         
         <div class="content">
             <div id="loadingMessage" class="loading">🔥 Firebase 연결 중...</div>
             
             <div id="mainContent" style="display: none;">
-                <div class="start-time-section">
-                    <label for="startTime">출발 시간</label>
-                    <input type="time" id="startTime" value="09:00">
+                <div id="daysContainer">
+                    <!-- 각 날짜의 콘텐츠가 여기에 동적으로 추가됩니다 -->
                 </div>
-                
-                <div id="destinationList"></div>
-                
-                <button class="add-button" onclick="addDestination()">+ 목적지 추가</button>
-                
-                <button class="reset-button" onclick="resetData()">🔄 초기값으로 리셋</button>
                 
                 <div class="info-box">
                     <strong>💡 사용 안내:</strong><br>
                     • 모든 변경사항은 자동으로 저장됩니다<br>
                     • 다른 사람이 수정하면 실시간으로 반영됩니다<br>
-                    • 여러 명이 동시에 사용 가능합니다
+                    • 각 목적지마다 활동 메모를 추가할 수 있습니다<br>
+                    • 최대 10일까지 일정을 추가할 수 있습니다
                 </div>
             </div>
         </div>
@@ -279,12 +394,22 @@
         const database = getDatabase(app);
         const tripDataRef = ref(database, 'tripData');
 
-        let destinations = [
-            { name: '서울역', distance: 0, travelTime: 0 },
-            { name: '대전', distance: 150, travelTime: 90 },
-            { name: '대구', distance: 110, travelTime: 60 },
-            { name: '부산', distance: 120, travelTime: 70 }
-        ];
+        let tripData = {
+            title: '🗺️ 여행 일정표',
+            currentDay: 0,
+            days: [
+                {
+                    title: 'Day 1',
+                    startTime: '09:00',
+                    destinations: [
+                        { name: '서울역', distance: 0, travelTime: 0, memo: '' },
+                        { name: '대전', distance: 150, travelTime: 90, memo: '' },
+                        { name: '대구', distance: 110, travelTime: 60, memo: '' },
+                        { name: '부산', distance: 120, travelTime: 70, memo: '' }
+                    ]
+                }
+            ]
+        };
 
         let isUpdatingFromFirebase = false;
 
@@ -296,23 +421,17 @@
             console.log('📥 Firebase 데이터 수신:', data);
             
             if (data) {
-                const titleInput = document.getElementById('tripTitle');
-                const timeInput = document.getElementById('startTime');
+                tripData = data;
                 
+                const titleInput = document.getElementById('tripTitle');
                 if (data.title && titleInput) {
                     titleInput.value = data.title;
                     document.title = data.title;
                 }
                 
-                if (data.startTime && timeInput) {
-                    timeInput.value = data.startTime;
-                }
-                
-                if (data.destinations && Array.isArray(data.destinations)) {
-                    destinations = data.destinations;
-                }
-                
-                renderDestinations();
+                renderTabs();
+                renderAllDays();
+                switchDay(tripData.currentDay || 0);
                 
                 // 연결 상태 표시
                 const indicator = document.getElementById('syncIndicator');
@@ -339,18 +458,15 @@
             if (isUpdatingFromFirebase) return;
             
             const titleInput = document.getElementById('tripTitle');
-            const timeInput = document.getElementById('startTime');
+            if (titleInput) {
+                tripData.title = titleInput.value;
+            }
             
-            const data = {
-                title: titleInput ? titleInput.value : '🗺️ 여행 일정표',
-                startTime: timeInput ? timeInput.value : '09:00',
-                destinations: destinations,
-                lastUpdated: Date.now()
-            };
+            tripData.lastUpdated = Date.now();
             
-            console.log('📤 Firebase에 저장:', data);
+            console.log('📤 Firebase에 저장:', tripData);
             
-            set(tripDataRef, data)
+            set(tripDataRef, tripData)
                 .then(() => {
                     console.log('✅ 저장 완료');
                 })
@@ -360,20 +476,157 @@
                 });
         }
 
+        function renderTabs() {
+            const tabsContainer = document.getElementById('tabsContainer');
+            tabsContainer.innerHTML = '';
+
+            tripData.days.forEach((day, index) => {
+                const tab = document.createElement('div');
+                tab.className = `tab ${index === tripData.currentDay ? 'active' : ''}`;
+                tab.innerHTML = `
+                    <span onclick="window.switchDay(${index})">${day.title}</span>
+                    ${tripData.days.length > 1 ? `<button class="tab-remove" onclick="window.removeDay(${index}); event.stopPropagation();">×</button>` : ''}
+                `;
+                tabsContainer.appendChild(tab);
+            });
+
+            // 추가 버튼
+            if (tripData.days.length < 10) {
+                const addTab = document.createElement('button');
+                addTab.className = 'tab-add';
+                addTab.textContent = '+ 날짜 추가';
+                addTab.onclick = window.addDay;
+                tabsContainer.appendChild(addTab);
+            }
+        }
+
+        function renderAllDays() {
+            const daysContainer = document.getElementById('daysContainer');
+            daysContainer.innerHTML = '';
+
+            tripData.days.forEach((day, dayIndex) => {
+                const dayContent = document.createElement('div');
+                dayContent.className = `day-content ${dayIndex === tripData.currentDay ? 'active' : ''}`;
+                dayContent.id = `day-${dayIndex}`;
+                
+                dayContent.innerHTML = `
+                    <div class="day-title-section">
+                        <input type="text" value="${day.title}" 
+                               onchange="window.updateDayTitle(${dayIndex}, this.value)"
+                               placeholder="예: Day 1 - 서울 출발">
+                    </div>
+
+                    <div class="start-time-section">
+                        <label for="startTime-${dayIndex}">출발 시간</label>
+                        <input type="time" id="startTime-${dayIndex}" value="${day.startTime}"
+                               onchange="window.updateStartTime(${dayIndex}, this.value)">
+                    </div>
+                    
+                    <div id="destinationList-${dayIndex}"></div>
+                    
+                    <button class="add-button" onclick="window.addDestination(${dayIndex})">+ 목적지 추가</button>
+                `;
+                
+                daysContainer.appendChild(dayContent);
+            });
+
+            // 각 날짜의 목적지 렌더링
+            tripData.days.forEach((day, dayIndex) => {
+                renderDestinations(dayIndex);
+            });
+        }
+
+        function switchDay(dayIndex) {
+            tripData.currentDay = dayIndex;
+            
+            document.querySelectorAll('.day-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            const dayContent = document.getElementById(`day-${dayIndex}`);
+            if (dayContent) {
+                dayContent.classList.add('active');
+            }
+            
+            const tabs = document.querySelectorAll('.tab');
+            if (tabs[dayIndex]) {
+                tabs[dayIndex].classList.add('active');
+            }
+            
+            saveToFirebase();
+        }
+
+        function addDay() {
+            if (tripData.days.length >= 10) {
+                alert('최대 10일까지만 추가할 수 있습니다.');
+                return;
+            }
+
+            const newDay = {
+                title: `Day ${tripData.days.length + 1}`,
+                startTime: '09:00',
+                destinations: [
+                    { name: '출발지', distance: 0, travelTime: 0, memo: '' }
+                ]
+            };
+
+            tripData.days.push(newDay);
+            renderTabs();
+            renderAllDays();
+            switchDay(tripData.days.length - 1);
+            saveToFirebase();
+        }
+
+        function removeDay(dayIndex) {
+            if (tripData.days.length <= 1) {
+                alert('최소 1개의 날짜는 필요합니다.');
+                return;
+            }
+
+            if (confirm(`${tripData.days[dayIndex].title}을(를) 삭제하시겠습니까?`)) {
+                tripData.days.splice(dayIndex, 1);
+                
+                if (tripData.currentDay >= tripData.days.length) {
+                    tripData.currentDay = tripData.days.length - 1;
+                }
+                
+                renderTabs();
+                renderAllDays();
+                switchDay(tripData.currentDay);
+                saveToFirebase();
+            }
+        }
+
+        function updateDayTitle(dayIndex, title) {
+            tripData.days[dayIndex].title = title;
+            renderTabs();
+            saveToFirebase();
+        }
+
+        function updateStartTime(dayIndex, time) {
+            tripData.days[dayIndex].startTime = time;
+            calculateAllTimes(dayIndex);
+        }
+
         function updateTitle() {
             const title = document.getElementById('tripTitle').value;
+            tripData.title = title;
             document.title = title;
             saveToFirebase();
         }
 
-        function calculateArrivalTime(index) {
-            const startTime = document.getElementById('startTime').value;
+        function calculateArrivalTime(dayIndex, destIndex) {
+            const day = tripData.days[dayIndex];
+            const startTime = day.startTime;
             if (!startTime) return '00:00';
             
             let [hours, minutes] = startTime.split(':').map(Number);
             
-            for (let i = 0; i <= index; i++) {
-                minutes += destinations[i].travelTime;
+            for (let i = 0; i <= destIndex; i++) {
+                minutes += day.destinations[i].travelTime;
             }
             
             hours += Math.floor(minutes / 60);
@@ -383,98 +636,86 @@
             return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
         }
 
-        function calculateAllTimes() {
-            destinations.forEach((_, index) => {
-                const arrivalElement = document.getElementById(`arrival-${index}`);
+        function calculateAllTimes(dayIndex) {
+            const day = tripData.days[dayIndex];
+            day.destinations.forEach((_, destIndex) => {
+                const arrivalElement = document.getElementById(`arrival-${dayIndex}-${destIndex}`);
                 if (arrivalElement) {
-                    arrivalElement.textContent = calculateArrivalTime(index);
+                    arrivalElement.textContent = calculateArrivalTime(dayIndex, destIndex);
                 }
             });
             saveToFirebase();
         }
 
-        function updateDestination(index, field, value) {
-            destinations[index][field] = field === 'name' ? value : Number(value);
-            calculateAllTimes();
+        function updateDestination(dayIndex, destIndex, field, value) {
+            tripData.days[dayIndex].destinations[destIndex][field] = 
+                (field === 'name' || field === 'memo') ? value : Number(value);
+            calculateAllTimes(dayIndex);
         }
 
-        function updateTravelTime(index, hours, minutes) {
+        function updateTravelTime(dayIndex, destIndex, hours, minutes) {
             const totalMinutes = Number(hours) * 60 + Number(minutes);
-            destinations[index].travelTime = totalMinutes;
-            calculateAllTimes();
+            tripData.days[dayIndex].destinations[destIndex].travelTime = totalMinutes;
+            calculateAllTimes(dayIndex);
         }
 
-        function addDestination() {
-            destinations.push({
+        function addDestination(dayIndex) {
+            tripData.days[dayIndex].destinations.push({
                 name: '새 목적지',
                 distance: 0,
-                travelTime: 0
+                travelTime: 0,
+                memo: ''
             });
-            renderDestinations();
+            renderDestinations(dayIndex);
             saveToFirebase();
         }
 
-        function removeDestination(index) {
-            if (index === 0) {
+        function removeDestination(dayIndex, destIndex) {
+            if (destIndex === 0) {
                 alert('출발지는 삭제할 수 없습니다.');
                 return;
             }
-            destinations.splice(index, 1);
-            renderDestinations();
+            tripData.days[dayIndex].destinations.splice(destIndex, 1);
+            renderDestinations(dayIndex);
             saveToFirebase();
         }
 
-        function resetData() {
-            if (confirm('초기값으로 리셋하시겠습니까?\n모든 사용자에게 반영됩니다.')) {
-                document.getElementById('tripTitle').value = '🗺️ 여행 일정표';
-                document.getElementById('startTime').value = '09:00';
-                destinations = [
-                    { name: '서울역', distance: 0, travelTime: 0 },
-                    { name: '대전', distance: 150, travelTime: 90 },
-                    { name: '대구', distance: 110, travelTime: 60 },
-                    { name: '부산', distance: 120, travelTime: 70 }
-                ];
-                
-                renderDestinations();
-                saveToFirebase();
-            }
-        }
-
-        function renderDestinations() {
-            const listElement = document.getElementById('destinationList');
+        function renderDestinations(dayIndex) {
+            const listElement = document.getElementById(`destinationList-${dayIndex}`);
             if (!listElement) return;
             
+            const day = tripData.days[dayIndex];
             listElement.innerHTML = '';
             
-            destinations.forEach((dest, index) => {
+            day.destinations.forEach((dest, destIndex) => {
                 const destDiv = document.createElement('div');
                 destDiv.className = 'destination';
                 destDiv.innerHTML = `
                     <div class="destination-header">
-                        <div class="destination-number">${index + 1}</div>
+                        <div class="destination-number">${destIndex + 1}</div>
                         <input type="text" class="destination-name" value="${dest.name}" 
-                               onchange="window.updateDestination(${index}, 'name', this.value)"
+                               onchange="window.updateDestination(${dayIndex}, ${destIndex}, 'name', this.value)"
                                style="border: none; background: transparent; font-size: 1.3em; font-weight: bold; flex: 1;">
                     </div>
                     <div class="destination-details">
                         <div class="detail-item">
                             <span class="detail-label">이동 거리 (km)</span>
                             <input type="number" class="detail-value" value="${dest.distance}" 
-                                   onchange="window.updateDestination(${index}, 'distance', this.value)"
-                                   ${index === 0 ? 'disabled' : ''}>
+                                   onchange="window.updateDestination(${dayIndex}, ${destIndex}, 'distance', this.value)"
+                                   ${destIndex === 0 ? 'disabled' : ''}>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">예상 이동 시간</span>
                             <div style="display: flex; gap: 10px; align-items: center;">
-                                <input type="number" id="hours-${index}" class="detail-value" value="${Math.floor(dest.travelTime / 60)}" 
-                                       onchange="window.updateTravelTime(${index}, this.value, document.getElementById('minutes-${index}').value)"
-                                       ${index === 0 ? 'disabled' : ''}
+                                <input type="number" id="hours-${dayIndex}-${destIndex}" class="detail-value" value="${Math.floor(dest.travelTime / 60)}" 
+                                       onchange="window.updateTravelTime(${dayIndex}, ${destIndex}, this.value, document.getElementById('minutes-${dayIndex}-${destIndex}').value)"
+                                       ${destIndex === 0 ? 'disabled' : ''}
                                        min="0"
                                        style="width: 70px;">
                                 <span style="font-weight: bold;">시간</span>
-                                <input type="number" id="minutes-${index}" class="detail-value" value="${dest.travelTime % 60}" 
-                                       onchange="window.updateTravelTime(${index}, document.getElementById('hours-${index}').value, this.value)"
-                                       ${index === 0 ? 'disabled' : ''}
+                                <input type="number" id="minutes-${dayIndex}-${destIndex}" class="detail-value" value="${dest.travelTime % 60}" 
+                                       onchange="window.updateTravelTime(${dayIndex}, ${destIndex}, document.getElementById('hours-${dayIndex}-${destIndex}').value, this.value)"
+                                       ${destIndex === 0 ? 'disabled' : ''}
                                        min="0"
                                        max="59"
                                        style="width: 70px;">
@@ -483,37 +724,39 @@
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">도착 시간</span>
-                            <span class="detail-value arrival-time" id="arrival-${index}">
-                                ${calculateArrivalTime(index)}
+                            <span class="detail-value arrival-time" id="arrival-${dayIndex}-${destIndex}">
+                                ${calculateArrivalTime(dayIndex, destIndex)}
                             </span>
                         </div>
                     </div>
-                    ${index > 0 ? `<button class="remove-button" onclick="window.removeDestination(${index})">삭제</button>` : ''}
+                    <div class="memo-section">
+                        <span class="detail-label">📝 활동 메모</span>
+                        <textarea placeholder="이곳에서 할 활동이나 메모를 입력하세요..."
+                                  onchange="window.updateDestination(${dayIndex}, ${destIndex}, 'memo', this.value)">${dest.memo || ''}</textarea>
+                    </div>
+                    ${destIndex > 0 ? `<button class="remove-button" onclick="window.removeDestination(${dayIndex}, ${destIndex})">삭제</button>` : ''}
                 `;
                 listElement.appendChild(destDiv);
             });
         }
 
-        // 전역 함수로 등록 (HTML에서 호출 가능하도록)
+        // 전역 함수로 등록
         window.updateTitle = updateTitle;
-        window.calculateAllTimes = calculateAllTimes;
+        window.switchDay = switchDay;
+        window.addDay = addDay;
+        window.removeDay = removeDay;
+        window.updateDayTitle = updateDayTitle;
+        window.updateStartTime = updateStartTime;
         window.updateDestination = updateDestination;
         window.updateTravelTime = updateTravelTime;
         window.addDestination = addDestination;
         window.removeDestination = removeDestination;
-        window.resetData = resetData;
 
         // 페이지 로드 시 이벤트 리스너 등록
         window.addEventListener('load', function() {
             const titleInput = document.getElementById('tripTitle');
-            const timeInput = document.getElementById('startTime');
-            
             if (titleInput) {
                 titleInput.addEventListener('change', updateTitle);
-            }
-            
-            if (timeInput) {
-                timeInput.addEventListener('change', calculateAllTimes);
             }
         });
     </script>
