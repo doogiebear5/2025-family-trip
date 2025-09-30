@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>여행 일정표</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .sync-indicator {
+            display: inline-block;
+            padding: 5px 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+        
+        .sync-indicator.connected {
+            background: rgba(16, 172, 132, 0.3);
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .start-time-section {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 2px solid #667eea;
+        }
+        
+        .start-time-section label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+        
+        .start-time-section input {
+            padding: 12px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 1.1em;
+            width: 200px;
+        }
+        
+        .destination {
+            background: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .destination:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .destination-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .destination-number {
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+        
+        .destination-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .detail-value {
+            font-size: 1.1em;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        input[type="number"], input[type="text"], input[type="time"] {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="number"]:focus, input[type="text"]:focus, input[type="time"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .add-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s, transform 0.2s;
+            width: 100%;
+        }
+        
+        .add-button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .remove-button {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+        
+        .remove-button:hover {
+            background: #ee5a6f;
+        }
+        
+        .arrival-time {
+            background: #667eea;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .reset-button {
+            background: #ff6348;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s, transform 0.2s;
+            width: 100%;
+        }
+        
+        .reset-button:hover {
+            background: #e55039;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3742fa;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <input type="text" id="tripTitle" value="🗺️ 여행 일정표" 
+                   style="background: transparent; border: none; color: white; font-size: 2em; font-weight: bold; text-align: center; width: 100%; margin-bottom: 10px; cursor: pointer;">
+            <p>🔥 Firebase 실시간 동기화 | 변경사항이 즉시 모든 사용자에게 반영됩니다</p>
+            <div class="sync-indicator" id="syncIndicator">🔄 연결 중...</div>
+        </div>
+        
+        <div class="content">
+            <div id="loadingMessage" class="loading">🔥 Firebase 연결 중...</div>
+            
+            <div id="mainContent" style="display: none;">
+                <div class="start-time-section">
+                    <label for="startTime">출발 시간</label>
+                    <input type="time" id="startTime" value="09:00">
+                </div>
+                
+                <div id="destinationList"></div>
+                
+                <button class="add-button" onclick="addDestination()">+ 목적지 추가</button>
+                
+                <button class="reset-button" onclick="resetData()">🔄 초기값으로 리셋</button>
+                
+                <div class="info-box">
+                    <strong>💡 사용 안내:</strong><br>
+                    • 모든 변경사항은 자동으로 저장됩니다<br>
+                    • 다른 사람이 수정하면 실시간으로 반영됩니다<br>
+                    • 여러 명이 동시에 사용 가능합니다
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, onValue, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRsAvMKBnpCPlJ_5rhev7DxOoTWcfI96k",
+            authDomain: "chuseok-family-trip.firebaseapp.com",
+            databaseURL: "https://chuseok-family-trip-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "chuseok-family-trip",
+            storageBucket: "chuseok-family-trip.firebasestorage.app",
+            messagingSenderId: "313904620787",
+            appId: "1:313904620787:web:888df3f1a06dc8e3808386"
+        };
+
+        // Firebase 초기화
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const tripDataRef = ref(database, 'tripData');
+
+        let destinations = [
+            { name: '서울역', distance: 0, travelTime: 0 },
+            { name: '대전', distance: 150, travelTime: 90 },
+            { name: '대구', distance: 110, travelTime: 60 },
+            { name: '부산', distance: 120, travelTime: 70 }
+        ];
+
+        let isUpdatingFromFirebase = false;
+
+        // Firebase에서 데이터 실시간 감지
+        onValue(tripDataRef, (snapshot) => {
+            isUpdatingFromFirebase = true;
+            
+            const data = snapshot.val();
+            console.log('📥 Firebase 데이터 수신:', data);
+            
+            if (data) {
+                const titleInput = document.getElementById('tripTitle');
+                const timeInput = document.getElementById('startTime');
+                
+                if (data.title && titleInput) {
+                    titleInput.value = data.title;
+                    document.title = data.title;
+                }
+                
+                if (data.startTime && timeInput) {
+                    timeInput.value = data.startTime;
+                }
+                
+                if (data.destinations && Array.isArray(data.destinations)) {
+                    destinations = data.destinations;
+                }
+                
+                renderDestinations();
+                
+                // 연결 상태 표시
+                const indicator = document.getElementById('syncIndicator');
+                if (indicator) {
+                    indicator.textContent = '✅ 실시간 동기화 중';
+                    indicator.className = 'sync-indicator connected';
+                }
+            } else {
+                // 데이터가 없으면 초기 데이터 저장
+                saveToFirebase();
+            }
+            
+            // 로딩 메시지 숨기고 메인 콘텐츠 표시
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            
+            setTimeout(() => {
+                isUpdatingFromFirebase = false;
+            }, 100);
+        });
+
+        // Firebase에 저장
+        function saveToFirebase() {
+            if (isUpdatingFromFirebase) return;
+            
+            const titleInput = document.getElementById('tripTitle');
+            const timeInput = document.getElementById('startTime');
+            
+            const data = {
+                title: titleInput ? titleInput.value : '🗺️ 여행 일정표',
+                startTime: timeInput ? timeInput.value : '09:00',
+                destinations: destinations,
+                lastUpdated: Date.now()
+            };
+            
+            console.log('📤 Firebase에 저장:', data);
+            
+            set(tripDataRef, data)
+                .then(() => {
+                    console.log('✅ 저장 완료');
+                })
+                .catch((error) => {
+                    console.error('❌ 저장 실패:', error);
+                    alert('저장 실패: ' + error.message);
+                });
+        }
+
+        function updateTitle() {
+            const title = document.getElementById('tripTitle').value;
+            document.title = title;
+            saveToFirebase();
+        }
+
+        function calculateArrivalTime(index) {
+            const startTime = document.getElementById('startTime').value;
+            if (!startTime) return '00:00';
+            
+            let [hours, minutes] = startTime.split(':').map(Number);
+            
+            for (let i = 0; i <= index; i++) {
+                minutes += destinations[i].travelTime;
+            }
+            
+            hours += Math.floor(minutes / 60);
+            minutes = minutes % 60;
+            hours = hours % 24;
+            
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        function calculateAllTimes() {
+            destinations.forEach((_, index) => {
+                const arrivalElement = document.getElementById(`arrival-${index}`);
+                if (arrivalElement) {
+                    arrivalElement.textContent = calculateArrivalTime(index);
+                }
+            });
+            saveToFirebase();
+        }
+
+        function updateDestination(index, field, value) {
+            destinations[index][field] = field === 'name' ? value : Number(value);
+            calculateAllTimes();
+        }
+
+        function updateTravelTime(index, hours, minutes) {
+            const totalMinutes = Number(hours) * 60 + Number(minutes);
+            destinations[index].travelTime = totalMinutes;
+            calculateAllTimes();
+        }
+
+        function addDestination() {
+            destinations.push({
+                name: '새 목적지',
+                distance: 0,
+                travelTime: 0
+            });
+            renderDestinations();
+            saveToFirebase();
+        }
+
+        function removeDestination(index) {
+            if (index === 0) {
+                alert('출발지는 삭제할 수 없습니다.');
+                return;
+            }
+            destinations.splice(index, 1);
+            renderDestinations();
+            saveToFirebase();
+        }
+
+        function resetData() {
+            if (confirm('초기값으로 리셋하시겠습니까?\n모든 사용자에게 반영됩니다.')) {
+                document.getElementById('tripTitle').value = '🗺️ 여행 일정표';
+                document.getElementById('startTime').value = '09:00';
+                destinations = [
+                    { name: '서울역', distance: 0, travelTime: 0 },
+                    { name: '대전', distance: 150, travelTime: 90 },
+                    { name: '대구', distance: 110, travelTime: 60 },
+                    { name: '부산', distance: 120, travelTime: 70 }
+                ];
+                
+                renderDestinations();
+                saveToFirebase();
+            }
+        }
+
+        function renderDestinations() {
+            const listElement = document.getElementById('destinationList');
+            if (!listElement) return;
+            
+            listElement.innerHTML = '';
+            
+            destinations.forEach((dest, index) => {
+                const destDiv = document.createElement('div');
+                destDiv.className = 'destination';
+                destDiv.innerHTML = `
+                    <div class="destination-header">
+                        <div class="destination-number">${index + 1}</div>
+                        <input type="text" class="destination-name" value="${dest.name}" 
+                               onchange="window.updateDestination(${index}, 'name', this.value)"
+                               style="border: none; background: transparent; font-size: 1.3em; font-weight: bold; flex: 1;">
+                    </div>
+                    <div class="destination-details">
+                        <div class="detail-item">
+                            <span class="detail-label">이동 거리 (km)</span>
+                            <input type="number" class="detail-value" value="${dest.distance}" 
+                                   onchange="window.updateDestination(${index}, 'distance', this.value)"
+                                   ${index === 0 ? 'disabled' : ''}>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">예상 이동 시간</span>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="number" id="hours-${index}" class="detail-value" value="${Math.floor(dest.travelTime / 60)}" 
+                                       onchange="window.updateTravelTime(${index}, this.value, document.getElementById('minutes-${index}').value)"
+                                       ${index === 0 ? 'disabled' : ''}
+                                       min="0"
+                                       style="width: 70px;">
+                                <span style="font-weight: bold;">시간</span>
+                                <input type="number" id="minutes-${index}" class="detail-value" value="${dest.travelTime % 60}" 
+                                       onchange="window.updateTravelTime(${index}, document.getElementById('hours-${index}').value, this.value)"
+                                       ${index === 0 ? 'disabled' : ''}
+                                       min="0"
+                                       max="59"
+                                       style="width: 70px;">
+                                <span style="font-weight: bold;">분</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">도착 시간</span>
+                            <span class="detail-value arrival-time" id="arrival-${index}">
+                                ${calculateArrivalTime(index)}
+                            </span>
+                        </div>
+                    </div>
+                    ${index > 0 ? `<button class="remove-button" onclick="window.removeDestination(${index})">삭제</button>` : ''}
+                `;
+                listElement.appendChild(destDiv);
+            });
+        }
+
+        // 전역 함수로 등록 (HTML에서 호출 가능하도록)
+        window.updateTitle = updateTitle;
+        window.calculateAllTimes = calculateAllTimes;
+        window.updateDestination = updateDestination;
+        window.updateTravelTime = updateTravelTime;
+        window.addDestination = addDestination;
+        window.removeDestination = removeDestination;
+        window.resetData = resetData;
+
+        // 페이지 로드 시 이벤트 리스너 등록
+        window.addEventListener('load', function() {
+            const titleInput = document.getElementById('tripTitle');
+            const timeInput = document.getElementById('startTime');
+            
+            if (titleInput) {
+                titleInput.addEventListener('change', updateTitle);
+            }
+            
+            if (timeInput) {
+                timeInput.addEventListener('change', calculateAllTimes);
+            }
+        });
+    </script>
+</body>
+</html>
