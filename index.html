@@ -202,13 +202,13 @@
         }
         
         .detail-label {
-            font-size: 0.85em;
+            font-size: 0.8em;
             color: #666;
             font-weight: 600;
         }
         
         .detail-value {
-            font-size: 1em;
+            font-size: 0.95em;
             color: #333;
             font-weight: bold;
         }
@@ -221,31 +221,39 @@
 
         .time-input-group input {
             width: 100%;
-            max-width: 200px;
+            max-width: 150px;
+            padding: 8px 10px;
+            font-size: 0.95em;
         }
 
         .time-input-group small {
             color: #999;
-            font-size: 0.85em;
+            font-size: 0.8em;
         }
 
         .travel-time-inputs {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
             flex-wrap: nowrap;
         }
 
         .travel-time-inputs input {
-            width: 50px;
+            width: 45px;
             text-align: center;
-            padding: 8px 5px;
-            font-size: 0.95em;
+            padding: 8px 4px;
+            font-size: 0.9em;
         }
 
         .travel-time-inputs span {
-            font-size: 0.9em;
+            font-size: 0.85em;
             white-space: nowrap;
+        }
+
+        .detail-item input[type="number"] {
+            max-width: 120px;
+            padding: 8px 10px;
+            font-size: 0.95em;
         }
 
         .memo-section {
@@ -343,10 +351,10 @@
         .arrival-time {
             background: #667eea;
             color: white;
-            padding: 12px 15px;
-            border-radius: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
             display: inline-block;
-            font-size: 1.1em;
+            font-size: 1em;
         }
 
         .loading {
@@ -812,9 +820,10 @@
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">📏 이동 거리 (km)</span>
-                            <input type="number" class="detail-value" value="${dest.distance || 0}" 
+                            <input type="number" value="${dest.distance || 0}" 
                                    onchange="window.updateDestination(${dayIndex}, ${destIndex}, 'distance', this.value)"
-                                   min="0">
+                                   min="0"
+                                   style="max-width: 100px;">
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">🚗 예상 이동 시간</span>
